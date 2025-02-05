@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte'
 	import GcodeFile from './gcodeFile.svelte'
 
+
+	console.log(import.meta.env.MODE) // Usually "development" in dev mode
+
 	let serialPorts = []
 	let connectedPort = null
 	let writer = null
@@ -57,6 +60,7 @@
 
 	const sendCommand = (command) => {
 		if (writer) {
+			console.log("Just sent: " + command);
 			const index = command.indexOf(';')
 			if (index !== -1) {
 				command = command.slice(0, index)
@@ -68,8 +72,19 @@
 	}
 
 	$: {
+		console.log("latestReplyBuffer");
+		console.log(latestReplyBuffer);
+		
+		// Check if status response is before a possible okay
+		// const statusEndIndex = latestReplyBuffer.indexOf('>');
+		// const okEndIndex = latestReplyBuffer.indexOf('ok');
+		// let statusIsBeforeOk = false;
+		// if (statusEndIndex != -1) {
+		// 	statusIsBeforeOk = statusEndIndex < okEndIndex;
+		// }
+
 		// First, check if it's a status message because those are frequent
-		if (latestReplyBuffer.includes('<') && latestReplyBuffer.includes('>')) {
+		if (latestReplyBuffer.includes('<') && latestReplyBuffer.includes('>') && statusIsBeforeOk) {
 			// status messages look like: <Idle|MPos:15.000,0.000,0.000|FS:0,0>
 			// console.log('a status message: ', latestReplyBuffer)
 			const leftIndex = latestReplyBuffer.indexOf('<')
@@ -84,7 +99,7 @@
 		} else {
 			// second, check if it's a reply message
 			const index = latestReplyBuffer.indexOf('\nok')
-
+			console.log("index: " + index);
 			if (index !== -1) {
 				const fullReply = latestReplyBuffer.slice(0, index)
 				latestReplyBuffer = latestReplyBuffer.slice(index + 3)
@@ -130,7 +145,7 @@
 				break
 			}
 			if (value) {
-				// console.log('Just received: ', value)
+				console.log('Just received: ', value)
 				latestReplyBuffer += value
 			}
 		}
