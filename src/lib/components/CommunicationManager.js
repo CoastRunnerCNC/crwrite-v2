@@ -20,12 +20,16 @@ export function createCommunicationManager(connector, updateReadBuffer) {
 		}
 	}
 
-	const write = (command) => {
+    const processResponse = (response) => {
+		// Process here
+	}
+
+	const writeLine = (command) => {
 		if (connector.writer) {
 			console.error('Cannot write out, no writer. Command: ' + command)
 			return
 		}
-        
+
 		console.log('Just sent: ' + command)
 		const index = command.indexOf(';')
 		if (index !== -1) {
@@ -36,12 +40,19 @@ export function createCommunicationManager(connector, updateReadBuffer) {
 		okaysNeeded += 1
 	}
 
-	const processResponse = (response) => {
-		// Process here
-	}
+    const sendFile = async (lines) => {
+        // run a loop until lines array is empty
+        for (const line of lines) {
+            while (okaysNeeded > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 10))
+            }
+            writeLine(line);
+        }
+    }
 
 	return {
 		startReading,
-		write
+        sendFile,
+		writeLine
 	}
 }
