@@ -1,14 +1,16 @@
 <script>
 	import { onMount } from 'svelte'
 	import GcodeFile from './gcodeFile.svelte'
+	import { createConnectionManager } from '../../lib/components/ConnectionManager'
+	import { createCommunicationManager } from '../../lib/components/CommunicationManager'
 
 
 	console.log(import.meta.env.MODE) // Usually "development" in dev mode
 
 	let serialPorts = []
-	let connectedPort = null
-	let writer = null
-	let reader = null
+	let connector = createConnectionManager();
+	let connectedPort = null;
+	let communicator = null;
 
 	let commandString = ''
 	let commandBuffer = []
@@ -52,23 +54,14 @@
 	}
 
 	const getDRO = () => {
-		if (writer) {
-			writer.write('?')
+		if (connector.writer) {
+			connector.writer.write('?')
 		}
 		setTimeout(getDRO, 200)
 	}
 
-	const sendCommand = (command) => {
-		if (writer) {
-			console.log("Just sent: " + command);
-			const index = command.indexOf(';')
-			if (index !== -1) {
-				command = command.slice(0, index)
-			}
-			writer.write(command + '\n')
-			readBuffer += command + '\n'
-			okaysNeeded += 1
-		}
+	const updateReadBuffer = (value) => {
+		readBuffer += value;
 	}
 
 	$: {
@@ -125,43 +118,6 @@
 		}
 	}
 
-	const connectToPort = async (port) => {
-		await port.open({ baudRate: 115200 })
-		connectedPort = port
-
-		const textEncoder = new TextEncoderStream()
-		const writableStreamClosed = textEncoder.readable.pipeTo(port.writable)
-		writer = textEncoder.writable.getWriter()
-
-		const textDecoder = new TextDecoderStream()
-		const readableStreamClosed = port.readable.pipeTo(textDecoder.writable)
-		reader = textDecoder.readable.getReader()
-
-		while (true) {
-			const { value, done } = await reader.read()
-			if (done) {
-				// Allow the serial port to be closed later.
-				reader.releaseLock()
-				break
-			}
-			if (value) {
-				console.log('Just received: ', value)
-				latestReplyBuffer += value
-			}
-		}
-
-		await readableStreamClosed.catch(() => {
-			/* Ignore the error */
-		})
-
-		writer.close()
-		await writableStreamClosed
-		writer = null
-
-		await connectedPort.close()
-		connectedPort = null
-	}
-
 	const sendCommandFromQueue = () => {
 		if (playing === false) {
 			console.log('not playing, ceasing playback')
@@ -178,12 +134,6 @@
 		const command = commandQueue[0]
 		sendCommand(command)
 		commandQueue = commandQueue.slice(1)
-	}
-	const disconnectFromPort = async () => {
-		if (reader) {
-			await reader.cancel()
-			reader = null
-		}
 	}
 
 	$: {
@@ -257,7 +207,7 @@
 						<button
 							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
 							on:click={() => {
-								connectToPort(port)
+								connector.connectToPort(port)
 							}}>Connect</button
 						>
 					{:else}
@@ -339,8 +289,8 @@
 				class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-[600px] h-[150px] whitespace-pre-wrap overflow-auto"
 			>
 				<pre>
-				{readBuffer}
-			</pre>
+					{readBuffer}
+				</pre>
 			</div>
 		</div>
 		<div>
@@ -381,12 +331,12 @@
 		<button
 			class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded {playIsEnabled(
 				commandQueue,
-				writer,
+				connector.writer,
 				playing
 			)
 				? ''
 				: 'cursor-not-allowed opacity-50'}"
-			disabled={!playIsEnabled(commandQueue, writer, playing)}
+			disabled={!playIsEnabled(commandQueue, connector.writer, playing)}
 			on:click={() => {
 				playing = true
 				sendCommandFromQueue()
@@ -402,8 +352,8 @@
 			disabled={!pauseIsEnabled(commandQueue, playing)}
 			on:click={() => {
 				playing = false
-				if (writer) {
-					writer.write('!')
+				if (connector.writer) {
+					connector.writer.write('!')
 				}
 			}}>Pause</button
 		>
@@ -418,8 +368,8 @@
 			on:click={() => {
 				playing = false
 				commandQueue = []
-				if (writer) {
-					writer.write('!')
+				if (connector.writer) {
+					connector.writer.write('!')
 				}
 			}}>Stop</button
 		>

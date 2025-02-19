@@ -7,7 +7,7 @@
 		"start": "electron main.js --no-sandbox",
 		"build": "vite build",
 		"preview": "vite preview",
-		"test": "vitest",
+		"test": "vitest --ui",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},
@@ -17,18 +17,20 @@
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^4",
 		"@types/eslint": "^8.56.0",
+		"@vitest/ui": "^3.0.5",
 		"autoprefixer": "^10.4.19",
 		"electron": "^29.2.0",
 		"eslint": "^8.56.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-svelte": "^2.35.1",
+		"happy-dom": "^17.0.0",
 		"postcss": "^8.4.38",
 		"prettier": "^3.1.1",
 		"prettier-plugin-svelte": "^3.1.2",
 		"svelte": "^5",
 		"tailwindcss": "^3.4.3",
 		"vite": "^5.0.3",
-		"vitest": "^1.2.0"
+		"vitest": "^3.0.5"
 	},
 	"type": "module",
 	"dependencies": {
