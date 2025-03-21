@@ -10,7 +10,6 @@
 	let serialPorts = []
 	let connector = createConnectionManager();
 	let connectedPort = null;
-	let communicator = null;
 
 	let commandString = ''
 	let commandBuffer = []
@@ -63,6 +62,9 @@
 	const updateReadBuffer = (value) => {
 		readBuffer += value;
 	}
+
+	let communicator = createCommunicationManager(connector, updateReadBuffer);
+
 
 	$: {
 		console.log("latestReplyBuffer");
@@ -118,6 +120,10 @@
 		}
 	}
 
+	const sendCommand = (command) => {
+		communicator.writeLine(command);
+	}
+
 	const sendCommandFromQueue = () => {
 		if (playing === false) {
 			console.log('not playing, ceasing playback')
@@ -148,6 +154,11 @@
 		// console.log('refreshing ports')
 		const newPorts = await listPorts()
 		serialPorts = newPorts
+	}
+
+	const disconnectFromPort = async () => {
+		await connector.disconnectFromPort();
+		connectedPort = null;
 	}
 
 	onMount(async () => {
@@ -207,7 +218,8 @@
 						<button
 							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
 							on:click={() => {
-								connector.connectToPort(port)
+								connector.connectToPort(port);
+								connectedPort = connector.connectedPort;
 							}}>Connect</button
 						>
 					{:else}

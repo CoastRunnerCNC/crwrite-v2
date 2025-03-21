@@ -3,7 +3,10 @@ export function createCommunicationManager(connector, updateReadBuffer) {
 	let latestReplyBuffer = ''
 
 	const startReading = async () => {
-		if (connector.reader) {
+		if (!connector || !connector.reader) {
+			console.error("Cannot read, no reader found.");
+			return;
+		}
 			while (true) {
 				const { value, done } = await connector.reader.read()
 				if (done) {
@@ -17,7 +20,7 @@ export function createCommunicationManager(connector, updateReadBuffer) {
 					processResponse(latestReplyBuffer)
 				}
 			}
-		}
+		
 	}
 
     const processResponse = (response) => {
@@ -25,16 +28,16 @@ export function createCommunicationManager(connector, updateReadBuffer) {
 	}
 
 	const writeLine = (command) => {
-		if (connector.writer) {
+		if (!connector || !connector.writer) {
 			console.error('Cannot write out, no writer. Command: ' + command)
 			return
 		}
 
-		console.log('Just sent: ' + command)
 		const index = command.indexOf(';')
 		if (index !== -1) {
 			command = command.slice(0, index)
 		}
+		console.log('Just sent: ' + command)
 		connector.writer.write(command + '\n')
 		updateReadBuffer(command + '\n')
 		okaysNeeded += 1

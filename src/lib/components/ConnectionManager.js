@@ -3,17 +3,26 @@ export function createConnectionManager() {
         let writer = null;
         let reader = null;
         let connectedPort = null;
+        let readableStreamClosed = null;
+        let writableStreamClosed = null;
 
         const connectToPort = async (port) => {
+            console.log("✅ Starting connection in connectToPort");
             connectedPort = port;
             await connectedPort.open({ baudRate: 115200 });
-
+        
             const textEncoder = new TextEncoderStream();
-            const writableStreamClosed = textEncoder.readable.pipeTo(connectedPort.writable);
+
+        
+            writableStreamClosed = textEncoder.readable.pipeTo(connectedPort.writable)
+                .then(() => console.log("✅ pipeTo() resolved"))
+                .catch((err) => console.error("❌ pipeTo() failed:", err));
+        
             writer = textEncoder.writable.getWriter();
+            console.log("✅ Writer set:", writer);
 
             const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = connectedPort.readable.pipeTo(textDecoder.writable);
+            readableStreamClosed = connectedPort.readable.pipeTo(textDecoder.writable);
             reader = textDecoder.readable.getReader();
         }
 
@@ -21,15 +30,22 @@ export function createConnectionManager() {
             if (reader) {
                 await reader.cancel()
                 reader.releaseLock()
-                await readableStreamClosed.catch(() => {
-                    /* Ignore the error */
-                })
+
+                if (readableStreamClosed) {
+                    await Promise.race([
+                        readableStreamClosed.catch(() => {}), // Stream closes
+                        new Promise((resolve) => setTimeout(resolve, 100)), // Prevents hanging
+                    ]);
+                }
                 reader = null
             }
 
             if (writer) {
                 await writer.close()
-                await writableStreamClosed;
+                await Promise.race([
+                    writableStreamClosed,
+                    new Promise((resolve) => setTimeout(resolve, 100)), // ✅ Prevent hanging
+                ]);
                 writer = null;
             }
 
