@@ -4,26 +4,25 @@ export function createCommunicationManager(connector, updateReadBuffer) {
 
 	const startReading = async () => {
 		if (!connector || !connector.reader) {
-			console.error("Cannot read, no reader found.");
-			return;
+			console.error('Cannot read, no reader found.')
+			return
 		}
-			while (true) {
-				const { value, done } = await connector.reader.read()
-				if (done) {
-					// Allow the serial port to be closed later.
-					connector.disconnectFromPort()
-					break
-				}
-				if (value) {
-					console.log('Just received: ', value)
-					latestReplyBuffer += value
-					processResponse(latestReplyBuffer)
-				}
+		while (true) {
+			const { value, done } = await connector.reader.read()
+			if (done) {
+				// Allow the serial port to be closed later.
+				connector.disconnectFromPort()
+				break
 			}
-		
+			if (value) {
+				console.log('Just received: ', value)
+				latestReplyBuffer += value
+				processResponse(latestReplyBuffer)
+			}
+		}
 	}
 
-    const processResponse = (response) => {
+	const processResponse = (response) => {
 		// Process here
 	}
 
@@ -43,19 +42,19 @@ export function createCommunicationManager(connector, updateReadBuffer) {
 		okaysNeeded += 1
 	}
 
-    const sendFile = async (lines) => {
-        // run a loop until lines array is empty
-        for (const line of lines) {
-            while (okaysNeeded > 0) {
-                await new Promise((resolve) => setTimeout(resolve, 10))
-            }
-            writeLine(line);
-        }
-    }
+	const sendFile = async (lines) => {
+		// run a loop until lines array is empty
+		for (const line of lines) {
+			while (okaysNeeded > 0) {
+				await new Promise((resolve) => setTimeout(resolve, 10))
+			}
+			writeLine(line)
+		}
+	}
 
 	return {
 		startReading,
-        sendFile,
+		sendFile,
 		writeLine
 	}
 }
