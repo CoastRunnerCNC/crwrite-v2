@@ -9,6 +9,13 @@
 
 	let serialPorts = []
 	let connector = createConnectionManager();
+
+	const disconnectFromPort = async () => {
+		console.log("disconnecting!");
+		await connector.disconnectFromPort();
+		connectedPort = null;
+	}
+
 	let connectedPort = null;
 
 	let commandString = ''
@@ -63,8 +70,13 @@
 		readBuffer += value;
 	}
 
-	let communicator = createCommunicationManager(connector, updateReadBuffer);
+	let communicator = createCommunicationManager(connector, updateReadBuffer, disconnectFromPort);
 
+	const connectToMachine = (port) => {
+		connector.connectToPort(port);
+		connectedPort = connector.connectedPort;
+		communicator.startReading();
+	}
 
 	$: {
 		console.log("latestReplyBuffer");
@@ -120,6 +132,12 @@
 		}
 	}
 
+	$: {
+		if (serialPorts) {
+			connectToMachine(serialPorts[0])
+		}
+	}
+
 	const sendCommand = (command) => {
 		communicator.writeLine(command);
 	}
@@ -156,10 +174,7 @@
 		serialPorts = newPorts
 	}
 
-	const disconnectFromPort = async () => {
-		await connector.disconnectFromPort();
-		connectedPort = null;
-	}
+
 
 	onMount(async () => {
 		navigator.serial.addEventListener('connect', (event) => {
@@ -218,8 +233,7 @@
 						<button
 							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
 							on:click={() => {
-								connector.connectToPort(port);
-								connectedPort = connector.connectedPort;
+								connectToMachine(port);
 							}}>Connect</button
 						>
 					{:else}

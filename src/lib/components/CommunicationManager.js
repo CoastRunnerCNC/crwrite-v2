@@ -1,29 +1,44 @@
-export function createCommunicationManager(connector, updateReadBuffer) {
+export function createCommunicationManager(connector, updateReadBuffer, clearUIMachineConnection) {
 	let okaysNeeded = 0
 	let latestReplyBuffer = ''
 
-	const startReading = async () => {
-		if (!connector || !connector.reader) {
-			console.error('Cannot read, no reader found.')
-			return
+	const waitForReader = async (tries = 10, delay = 100) => {
+		for (let i = 0; i < tries; i++) {
+			if (connector.reader) return true;
+			await new Promise((res) => setTimeout(res, delay));
 		}
+		return false;
+	};
+	
+	const startReading = async () => {
+		const ready = await waitForReader();
+		if (!ready) {
+			console.error('Reader not ready after waiting');
+			return;
+		}
+	
+		try {
 		while (true) {
-			const { value, done } = await connector.reader.read()
+			const { value, done } = await connector.reader.read();
 			if (done) {
-				// Allow the serial port to be closed later.
-				connector.disconnectFromPort()
-				break
+				setTimeout(() => {clearUIMachineConnection();}, 1000)
+				console.warn("Read loop closed cleanly")
+				break;
 			}
 			if (value) {
-				console.log('Just received: ', value)
-				latestReplyBuffer += value
-				processResponse(latestReplyBuffer)
+				console.log('Just received: ', value);
+				processResponse(value);
 			}
 		}
+	} catch (err) {
+		console.error("Read loop crashed", err);
+		setTimeout(() => {clearUIMachineConnection();}, 1000)
 	}
+	};
+	
 
 	const processResponse = (response) => {
-		// Process here
+		updateReadBuffer(response);
 	}
 
 	const writeLine = (command) => {
