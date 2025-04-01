@@ -4,19 +4,18 @@
 	import { createConnectionManager } from '../../lib/components/ConnectionManager'
 	import { createCommunicationManager } from '../../lib/components/CommunicationManager'
 
-
 	console.log(import.meta.env.MODE) // Usually "development" in dev mode
 
 	let serialPorts = []
-	let connector = createConnectionManager();
+	let connector = createConnectionManager()
 
 	const disconnectFromPort = async () => {
-		console.log("disconnecting!");
-		await connector.disconnectFromPort();
-		connectedPort = null;
+		console.log('disconnecting!')
+		await connector.disconnectFromPort()
+		connectedPort = null
 	}
 
-	let connectedPort = null;
+	let connectedPort = null
 
 	let commandString = ''
 	let commandBuffer = []
@@ -67,21 +66,21 @@
 	}
 
 	const updateReadBuffer = (value) => {
-		readBuffer += value;
+		readBuffer += value
 	}
 
-	let communicator = createCommunicationManager(connector, updateReadBuffer, disconnectFromPort);
+	let communicator = createCommunicationManager(connector, updateReadBuffer, disconnectFromPort)
 
 	const connectToMachine = (port) => {
-		connector.connectToPort(port);
-		connectedPort = connector.connectedPort;
-		communicator.startReading();
+		connector.connectToPort(port)
+		connectedPort = connector.connectedPort
+		communicator.startReading()
 	}
 
 	$: {
-		console.log("latestReplyBuffer");
-		console.log(latestReplyBuffer);
-		
+		console.log('latestReplyBuffer')
+		console.log(latestReplyBuffer)
+
 		// Check if status response is before a possible okay
 		// const statusEndIndex = latestReplyBuffer.indexOf('>');
 		// const okEndIndex = latestReplyBuffer.indexOf('ok');
@@ -106,7 +105,7 @@
 		} else {
 			// second, check if it's a reply message
 			const index = latestReplyBuffer.indexOf('\nok')
-			console.log("index: " + index);
+			console.log('index: ' + index)
 			if (index !== -1) {
 				const fullReply = latestReplyBuffer.slice(0, index)
 				latestReplyBuffer = latestReplyBuffer.slice(index + 3)
@@ -139,7 +138,7 @@
 	}
 
 	const sendCommand = (command) => {
-		communicator.writeLine(command);
+		communicator.writeLine(command)
 	}
 
 	const sendCommandFromQueue = () => {
@@ -173,8 +172,6 @@
 		const newPorts = await listPorts()
 		serialPorts = newPorts
 	}
-
-
 
 	onMount(async () => {
 		navigator.serial.addEventListener('connect', (event) => {
@@ -233,7 +230,7 @@
 						<button
 							class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
 							on:click={() => {
-								connectToMachine(port);
+								connectToMachine(port)
 							}}>Connect</button
 						>
 					{:else}

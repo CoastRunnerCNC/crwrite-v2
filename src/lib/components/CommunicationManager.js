@@ -4,41 +4,44 @@ export function createCommunicationManager(connector, updateReadBuffer, clearUIM
 
 	const waitForReader = async (tries = 10, delay = 100) => {
 		for (let i = 0; i < tries; i++) {
-			if (connector.reader) return true;
-			await new Promise((res) => setTimeout(res, delay));
+			if (connector.reader) return true
+			await new Promise((res) => setTimeout(res, delay))
 		}
-		return false;
-	};
-	
-	const startReading = async () => {
-		const ready = await waitForReader();
-		if (!ready) {
-			console.error('Reader not ready after waiting');
-			return;
-		}
-	
-		try {
-		while (true) {
-			const { value, done } = await connector.reader.read();
-			if (done) {
-				setTimeout(() => {clearUIMachineConnection();}, 1000)
-				console.warn("Read loop closed cleanly")
-				break;
-			}
-			if (value) {
-				console.log('Just received: ', value);
-				processResponse(value);
-			}
-		}
-	} catch (err) {
-		console.error("Read loop crashed", err);
-		setTimeout(() => {clearUIMachineConnection();}, 1000)
+		return false
 	}
-	};
-	
+
+	const startReading = async () => {
+		const ready = await waitForReader()
+		if (!ready) {
+			console.error('Reader not ready after waiting')
+			return
+		}
+
+		try {
+			while (true) {
+				const { value, done } = await connector.reader.read()
+				if (done) {
+					setTimeout(() => {
+						clearUIMachineConnection()
+					}, 1000)
+					console.warn('Read loop closed cleanly')
+					break
+				}
+				if (value) {
+					console.log('Just received: ', value)
+					processResponse(value)
+				}
+			}
+		} catch (err) {
+			console.error('Read loop crashed', err)
+			setTimeout(() => {
+				clearUIMachineConnection()
+			}, 1000)
+		}
+	}
 
 	const processResponse = (response) => {
-		updateReadBuffer(response);
+		updateReadBuffer(response)
 	}
 
 	const writeLine = (command) => {
