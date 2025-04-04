@@ -48,7 +48,10 @@
 
 	const listPorts = async () => {
 		const ports = await navigator.serial.getPorts()
-		return ports
+		return ports.filter((port) => {
+			const info = port.getInfo?.()
+			return info && info.usbVendorId !== undefined && info.usbProductId !== undefined
+		})
 	}
 
 	const prettyName = (port) => {
